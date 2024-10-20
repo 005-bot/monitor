@@ -23,7 +23,7 @@ class Config:
 config = Config(
     redis=Redis(
         url=os.environ.get("REDIS__URL", "redis://localhost:6379"),
-        prefix=os.environ.get("REDIS__PREFIX", "records"),
+        prefix=os.environ.get("REDIS__PREFIX", "bot-005"),
     ),
     scraper=Scraper(
         url=os.environ.get("SCRAPER__URL", "http://93.92.65.26/aspx/Gorod.htm"),

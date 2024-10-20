@@ -38,7 +38,7 @@ format:
 
 # Development commands
 run-local:
-	$(PIPENV) run python app/main.py
+	$(PIPENV) run python -m app
 
 # Cleanup
 clean:

@@ -7,6 +7,7 @@ name = "pypi"
 bs4 = "*"
 httpx = "*"
 redis = "*"
+apis = {git = "git+https://github.com/005-bot/apis"}
 
 [dev-packages]
 

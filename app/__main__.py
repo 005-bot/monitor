@@ -1,11 +1,13 @@
+import asyncio
 import signal
 
 import redis
-from config import config
-from scheduler import PeriodicTask
-from storage import Storage
 
-from scraper import Scraper
+from app.config import config
+from app.publisher import Publisher
+from app.scheduler import PeriodicTask
+from app.scraper import Scraper
+from app.storage import Storage
 
 
 async def main():
@@ -13,17 +15,18 @@ async def main():
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, lambda: asyncio.create_task(shutdown(sig, loop)))
 
-    print("Hello, World!")
     r = redis.from_url(config.redis.url, decode_responses=True)
     storage = Storage(r, config.redis.prefix)
+    publisher = Publisher(r, config.redis.prefix)
 
-    scraper = Scraper(config.scraper.url)
+    scraper = Scraper(config.scraper.url, storage=storage)
 
     task = PeriodicTask(
         scraper=scraper,
         storage=storage,
+        publisher=publisher,
         interval=config.scraper.interval,
-    )  # Run every 5 seconds
+    )
     asyncio.create_task(task.start())
 
     try:
@@ -33,6 +36,7 @@ async def main():
     except asyncio.CancelledError:
         print("Cancelled!")
     finally:
+        r.close()
         print("Bye!")
 
 
@@ -45,6 +49,4 @@ async def shutdown(sig, loop):
 
 
 if __name__ == "__main__":
-    import asyncio
-
     asyncio.run(main())

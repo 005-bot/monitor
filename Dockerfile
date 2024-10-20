@@ -4,6 +4,9 @@ FROM python:3.11-alpine as builder
 # Set the working directory in the container
 WORKDIR /usr/src
 
+# Install Git
+RUN apk add --no-cache git
+
 # Install system dependencies and Pipenv
 RUN pip install pipenv
 
@@ -33,4 +36,4 @@ COPY --from=builder /usr/src/.venv/ /app/.venv/
 COPY . .
 
 # Set the entrypoint command
-CMD ["/app/.venv/bin/python", "app/main.py"]
+CMD ["/app/.venv/bin/python", "-m", "app"]

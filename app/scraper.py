@@ -1,9 +1,14 @@
-from dataclasses import dataclass
 import hashlib
 import re
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
 import httpx
 from bs4 import BeautifulSoup
 from bs4.element import Tag
+
+if TYPE_CHECKING:
+    from app.storage import Storage
 
 
 class Record:
@@ -28,6 +33,9 @@ class Record:
             .hex()
         )
 
+    def __hash__(self) -> int:
+        return hash(self.hash)
+
     def __repr__(self):
         return f"Record({self.area}, {self.organization}, {self.address}, {self.dates})"
 
@@ -39,13 +47,22 @@ class State:
 
 
 class Scraper:
-    def __init__(self, url):
+    def __init__(self, url: str, storage: "Storage"):
         self.url = url
+        self.storage = storage
 
     async def run(self) -> list[Record]:
         print("Running scraper...")
+
+        if not await self.is_changed():
+            print("ETag not changed, skipping scraping...")
+            return []
+
+        print("ETag changed, scraping...")
         response = httpx.get(self.url)
         response.encoding = "windows-1251"
+
+        response.raise_for_status()
 
         soup = BeautifulSoup(response.text, "html.parser")
         table: Tag = soup.find("table")  # type: ignore
@@ -66,11 +83,16 @@ class Scraper:
                 records.append(self.process_area(state, row))
 
         records = list(filter(lambda x: x, records))
-        for record in records:
-            print(record)
-        print(len(records))
 
         return records
+
+    async def is_changed(self) -> bool:
+        response = httpx.head(self.url)
+        response.raise_for_status()
+        if "ETag" not in response.headers:
+            return True
+
+        return self.storage.is_etag_changed(response.headers["ETag"])
 
     def process_area(self, state: State, row: Tag) -> Record | None:
         text = row.text.strip()

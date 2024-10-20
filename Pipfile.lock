@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "3164bb1bd94968cc5f0bc716f37f34dfb317defc69ec1981929c9fed6982f9b3"
+            "sha256": "5b4122e9aeda12943d4a082d38377407a9919fb79e99b6ee9e708e7ed058660d"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -23,6 +23,10 @@
             ],
             "markers": "python_version >= '3.9'",
             "version": "==4.6.2.post1"
+        },
+        "apis": {
+            "git": "git+https://github.com/005-bot/apis",
+            "ref": "cb35ab0f3807ff092b3f1092f7ea13a5a3ad09ef"
         },
         "beautifulsoup4": {
             "hashes": [
