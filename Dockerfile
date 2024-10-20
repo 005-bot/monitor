@@ -16,7 +16,7 @@ ENV PIPENV_VENV_IN_PROJECT=1
 COPY Pipfile Pipfile.lock ./
 
 # Install project dependencies
-RUN pipenv sync
+RUN pipenv install --dev --deploy
 
 # Final stage
 FROM python:3.11-alpine
