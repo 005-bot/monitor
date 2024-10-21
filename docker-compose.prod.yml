@@ -1,0 +1,14 @@
+services:
+  monitor:
+    image: ghcr.io/005-bot/monitor:latest
+    environment:
+      - REDIS__URL=redis://redis:6379
+      - REDIS__PREFIX=monitor
+      - SCRAPER__URL=http://93.92.65.26/aspx/Gorod.htm
+      - SCRAPER__INTERVAL=60
+    networks:
+      - internal
+   
+networks:
+  internal:
+    external: true
