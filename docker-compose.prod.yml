@@ -5,7 +5,7 @@ services:
       - REDIS__URL=redis://redis:6379
       - REDIS__PREFIX=monitor
       - SCRAPER__URL=http://93.92.65.26/aspx/Gorod.htm
-      - SCRAPER__INTERVAL=60
+      - SCRAPER__INTERVAL=${SCRAPER__INTERVAL}
     networks:
       - internal
    
