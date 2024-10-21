@@ -26,11 +26,7 @@ class Record:
         self.dates = dates
 
         self.hash = (
-            hashlib.md5(
-                (self.area + self.organization + self.address + self.dates).encode()
-            )
-            .digest()
-            .hex()
+            hashlib.md5((self.area + self.address + self.dates).encode()).digest().hex()
         )
 
     def __hash__(self) -> int:
