@@ -1,15 +1,18 @@
+from datetime import datetime
 from redis import Redis
 
 from app.scraper import Record
 
 
 class Storage:
-    def __init__(self, r: Redis, prefix: str):
+    def __init__(self, r: Redis, prefix: str, ttl: int):
         self.r = r
         self.prefix = prefix
+        self.ttl = ttl
 
         self.key_etag = f"{prefix}:etag"
         self.key_hashes = f"{prefix}:items"
+        self.key_ttls = f"{prefix}:ttls"
 
     def is_etag_changed(self, etag: str | None) -> bool:
         print(f"ETag: {etag}")
@@ -33,5 +36,23 @@ class Storage:
 
         hashes = [record.hash for record in records]
 
-        self.r.delete(self.key_hashes)
-        self.r.sadd(self.key_hashes, *hashes)
+        pipe = self.r.pipeline()
+
+        # self.r.delete(self.key_hashes)
+        pipe.sadd(self.key_hashes, *hashes)
+        pipe.zadd(
+            self.key_ttls,
+            {record.hash: datetime.now().timestamp() for record in records},
+        )
+        pipe.execute()
+
+        to_remove = self.r.zrangebyscore(
+            self.key_ttls, 0, datetime.now().timestamp() - self.ttl
+        )
+        if not to_remove:
+            return
+
+        pipe = self.r.pipeline()
+        pipe.zrem(self.key_ttls, *to_remove)
+        pipe.srem(self.key_hashes, *to_remove)
+        pipe.execute()
