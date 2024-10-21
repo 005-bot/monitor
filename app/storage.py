@@ -1,7 +1,10 @@
 from datetime import datetime
+import logging
 from redis import Redis
 
 from app.scraper import Record
+
+logger = logging.getLogger(__name__)
 
 
 class Storage:
@@ -15,7 +18,6 @@ class Storage:
         self.key_ttls = f"{prefix}:ttls"
 
     def is_etag_changed(self, etag: str | None) -> bool:
-        print(f"ETag: {etag}")
         if etag is None:
             return True
 
@@ -51,6 +53,8 @@ class Storage:
         )
         if not to_remove:
             return
+
+        logger.info(f"Removing %d outdated records", len(to_remove))
 
         pipe = self.r.pipeline()
         pipe.zrem(self.key_ttls, *to_remove)

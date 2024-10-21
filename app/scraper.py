@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -9,6 +10,8 @@ from bs4.element import Tag
 
 if TYPE_CHECKING:
     from app.storage import Storage
+
+logger = logging.getLogger(__name__)
 
 
 class Record:
@@ -48,13 +51,13 @@ class Scraper:
         self.storage = storage
 
     async def run(self) -> list[Record]:
-        print("Running scraper...")
+        logger.info("Running scraper...")
 
         if not await self.is_changed():
-            print("ETag not changed, skipping scraping...")
+            logger.info("ETag not changed, skipping scraping...")
             return []
 
-        print("ETag changed, scraping...")
+        logger.info("ETag changed, scraping...")
         response = httpx.get(self.url)
         response.encoding = "windows-1251"
 
@@ -86,18 +89,20 @@ class Scraper:
         response = httpx.head(self.url)
         response.raise_for_status()
         if "ETag" not in response.headers:
+            logger.warning("ETag not found, scraping anyway.")
             return True
 
         return self.storage.is_etag_changed(response.headers["ETag"])
 
     def process_area(self, state: State, row: Tag) -> Record | None:
         text = row.text.strip()
-        if "завтра" in text:
+        if "Информация о плановых отключениях" in text:
             state.today = False
             return None
 
         cells = row.find_all("td")
         if len(cells) != 3 or not cells[0].text.strip():
+            logger.warning("Invalid row format: %s", text)
             return None
 
         organization = self.collapse_whitespaces(cells[0].text.strip())

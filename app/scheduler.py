@@ -1,10 +1,13 @@
 import asyncio
+import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from app.storage import Storage
     from app.scraper import Scraper
     from app.publisher import Publisher
+
+logger = logging.getLogger(__name__)
 
 
 class PeriodicTask:
@@ -33,8 +36,7 @@ class PeriodicTask:
         self.is_running = False
 
     async def run(self):
-        # Your periodic task logic goes here
-        print("Running periodic task...")
+        logger.info("Running periodic task...")
 
         try:
             records = await self.scraper.run()
@@ -42,17 +44,17 @@ class PeriodicTask:
             if not changes:
                 return
 
-            print("Changes:")
+            logger.info("Changes:")
             for record in changes:
-                print(record)
+                logger.info(record)
 
             for record in changes:
                 try:
                     await self.publisher.publish(record)
                 except Exception as e:
-                    print(f"Failed to publish outage: {e}")
+                    logger.error(f"Failed to publish outage: {e}", exc_info=True)
                     records.remove(record)
 
             self.storage.commit(records)
         except Exception as e:
-            print(f"Failed to commit records: {e}")
+            logger.error(f"Failed to commit records: {e}", exc_info=True)

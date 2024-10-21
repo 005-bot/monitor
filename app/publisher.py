@@ -1,9 +1,12 @@
+import logging
 from typing import TYPE_CHECKING
 from apis.pubsub_models import Outage
 
 if TYPE_CHECKING:
     from redis import Redis
     from app.scraper import Record
+
+logger = logging.getLogger(__name__)
 
 
 class Publisher:
@@ -19,4 +22,8 @@ class Publisher:
             dates=outage.dates,
         ).to_json()
 
-        self.redis.publish(self.channel, msg)
+        try:
+            self.redis.publish(self.channel, msg)
+            logger.info(f"Published outage: {msg}")
+        except Exception as e:
+            logger.error(f"Failed to publish outage: {e}", exc_info=True)
