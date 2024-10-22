@@ -49,6 +49,8 @@ class Scraper:
         self.url = url
         self.storage = storage
 
+        self.session = httpx.AsyncClient()
+
     async def run(self) -> list[Record]:
         logger.info("Running scraper...")
 
@@ -57,7 +59,7 @@ class Scraper:
             return []
 
         logger.info("ETag changed, scraping...")
-        response = httpx.get(self.url)
+        response = await self.session.get(self.url)  # httpx.get(self.url)
         response.encoding = "windows-1251"
 
         response.raise_for_status()
@@ -72,12 +74,22 @@ class Scraper:
             text = row.text.strip()
             if not text:
                 continue
-            if "район" in text:
-                state.area = self.collapse_whitespaces(text)
+
+            cells = row.find_all("td")
+            if len(cells) != 3:
+                logger.debug("Skipping row: %s", text)
+                continue
+
+            if (
+                not cells[0].text.strip()
+                and "район" in cells[1].text
+                and not cells[2].text.strip()
+            ):
+                state.area = self.collapse_whitespaces(cells[1].text)
                 continue
 
             if state.area:
-                records.append(self.process_area(state, row))
+                records.append(self.process_area(state.area, cells))
 
         records = list(filter(lambda x: x, records))
 
@@ -92,24 +104,18 @@ class Scraper:
 
         return self.storage.is_etag_changed(response.headers["ETag"])
 
-    def process_area(self, state: State, row: Tag) -> Record | None:
-        text = row.text.strip()
-
-        cells = row.find_all("td")
-
-        if len(cells) != 3 or not all(cell.text.strip() for cell in cells):
-            logger.debug("Skipping row: %s", text)
+    def process_area(self, area: str, cells: tuple[Tag, Tag, Tag]) -> Record | None:
+        if not all(cell.text.strip() for cell in cells):
+            logger.debug(
+                "Skipping row: %s", "|".join(cell.text.strip() for cell in cells)
+            )
             return None
 
         organization = self.collapse_whitespaces(cells[0].text.strip())
         address = self.collapse_whitespaces(cells[1].text.strip())
         dates = self.collapse_whitespaces(cells[2].text.strip())
 
-        if not state.area:
-            logger.warning("Area is not defined for: %s", text)
-            return None
-
-        return Record(state.area, organization, address, dates)
+        return Record(area, organization, address, dates)
 
     def collapse_whitespaces(self, string):
         return re.sub(r"\s+", " ", string)
