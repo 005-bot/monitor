@@ -42,7 +42,6 @@ class Record:
 @dataclass
 class State:
     area: str | None
-    today: bool
 
 
 class Scraper:
@@ -65,7 +64,7 @@ class Scraper:
 
         soup = BeautifulSoup(response.text, "html.parser")
         table: Tag = soup.find("table")  # type: ignore
-        state: State = State(area=None, today=True)
+        state: State = State(area=None)
 
         # Print all rows with numbers
         records = []
@@ -75,7 +74,6 @@ class Scraper:
                 continue
             if "район" in text:
                 state.area = self.collapse_whitespaces(text)
-                state.today = True
                 continue
 
             if state.area:
@@ -96,18 +94,20 @@ class Scraper:
 
     def process_area(self, state: State, row: Tag) -> Record | None:
         text = row.text.strip()
-        if "Информация о плановых отключениях" in text:
-            state.today = False
-            return None
 
         cells = row.find_all("td")
-        if len(cells) != 3 or not cells[0].text.strip():
-            logger.warning("Invalid row format: %s", text)
+
+        if len(cells) != 3 or not all(cell.text.strip() for cell in cells):
+            logger.debug("Skipping row: %s", text)
             return None
 
         organization = self.collapse_whitespaces(cells[0].text.strip())
         address = self.collapse_whitespaces(cells[1].text.strip())
         dates = self.collapse_whitespaces(cells[2].text.strip())
+
+        if not state.area:
+            logger.warning("Area is not defined for: %s", text)
+            return None
 
         return Record(state.area, organization, address, dates)
 
