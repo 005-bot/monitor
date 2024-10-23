@@ -1,10 +1,23 @@
-from datetime import datetime
+import asyncio
+import hashlib
 import logging
+from datetime import datetime
+import re
+from typing import Awaitable, Literal, TypeVar
+
 from redis import Redis
 
 from app.scraper import Record
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
+
+
+async def result(value: T | Awaitable[T]) -> T:
+    if asyncio.iscoroutine(value):
+        return await value
+    return value  # type: ignore
 
 
 class Storage:
@@ -17,46 +30,69 @@ class Storage:
         self.key_hashes = f"{prefix}:items"
         self.key_ttls = f"{prefix}:ttls"
 
-    def is_etag_changed(self, etag: str | None) -> bool:
+        self.re_non_word = re.compile(r"\W")
+
+    async def migrate(self):
+        pass
+
+    async def is_etag_changed(self, etag: str | None) -> bool:
         if etag is None:
             return True
 
-        return self.r.set(self.key_etag, etag, get=True) != etag
+        return (await result(self.r.set(self.key_etag, etag, get=True))) != etag
 
-    def diff(self, records: list[Record]) -> list[Record]:
+    async def diff(self, records: list[Record]) -> list[Record]:
         if not records:
             return []
 
-        hashes = [record.hash for record in records]
-        members = self.r.smismember(self.key_hashes, hashes)
+        hashes = [self.hash(record) for record in records]
+        members: list[Literal[0, 1]] = await result(
+            self.r.smismember(self.key_hashes, hashes)
+        )
 
         return [record for record, is_member in zip(records, members) if not is_member]
 
-    def commit(self, records: list[Record]):
+    async def commit(self, records: list[Record]):
         if not records:
             return
 
-        hashes = [record.hash for record in records]
+        hashes = [self.hash(record) for record in records]
 
         pipe = self.r.pipeline()
 
-        # self.r.delete(self.key_hashes)
-        pipe.sadd(self.key_hashes, *hashes)
-        pipe.zadd(
-            self.key_ttls,
-            {record.hash: datetime.now().timestamp() for record in records},
+        await result(pipe.sadd(self.key_hashes, *hashes))
+        await result(
+            pipe.zadd(
+                self.key_ttls,
+                {self.hash(record): datetime.now().timestamp() for record in records},
+            )
         )
         pipe.execute()
 
-        to_remove = self.r.zrangebyscore(
-            self.key_ttls, 0, datetime.now().timestamp() - self.ttl
+        to_remove = await result(
+            self.r.zrangebyscore(
+                self.key_ttls, 0, datetime.now().timestamp() - self.ttl
+            )
         )
         if not to_remove:
             return
 
-        logger.info(f"Removing %d outdated records", len(to_remove))
+        logger.info("Removing %d outdated records", len(to_remove))
 
         pipe = self.r.pipeline()
-        pipe.zrem(self.key_ttls, *to_remove)
-        pipe.srem(self.key_hashes, *to_remove)
+        await result(pipe.zrem(self.key_ttls, *to_remove))
+        await result(pipe.srem(self.key_hashes, *to_remove))
         pipe.execute()
+
+    def hash(self, record: Record) -> str:
+        return (
+            hashlib.md5(
+                (
+                    record.area
+                    + self.re_non_word.sub("", record.address)
+                    + record.dates
+                ).encode()
+            )
+            .digest()
+            .hex()
+        )

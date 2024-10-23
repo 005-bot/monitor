@@ -1,4 +1,3 @@
-import hashlib
 import logging
 import re
 from dataclasses import dataclass
@@ -20,20 +19,11 @@ class Record:
     address: str
     dates: str
 
-    hash: str
-
     def __init__(self, area: str, organization: str, address: str, dates: str):
         self.area = area
         self.organization = organization
         self.address = address
         self.dates = dates
-
-        self.hash = (
-            hashlib.md5((self.area + self.address + self.dates).encode()).digest().hex()
-        )
-
-    def __hash__(self) -> int:
-        return hash(self.hash)
 
     def __repr__(self):
         return f"Record({self.area}, {self.organization}, {self.address}, {self.dates})"
@@ -102,7 +92,7 @@ class Scraper:
             logger.warning("ETag not found, scraping anyway.")
             return True
 
-        return self.storage.is_etag_changed(response.headers["ETag"])
+        return await self.storage.is_etag_changed(response.headers["ETag"])
 
     def process_area(self, area: str, cells: tuple[Tag, Tag, Tag]) -> Record | None:
         if not all(cell.text.strip() for cell in cells):

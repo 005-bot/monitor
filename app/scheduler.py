@@ -40,7 +40,7 @@ class PeriodicTask:
 
         try:
             records = await self.scraper.run()
-            changes = self.storage.diff(records)
+            changes = await self.storage.diff(records)
             if not changes:
                 return
 
@@ -55,6 +55,6 @@ class PeriodicTask:
                     logger.error(f"Failed to publish outage: {e}", exc_info=True)
                     records.remove(record)
 
-            self.storage.commit(records)
+            await self.storage.commit(records)
         except Exception as e:
             logger.error(f"Failed to commit records: {e}", exc_info=True)

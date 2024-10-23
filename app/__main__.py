@@ -22,11 +22,12 @@ async def main():
 
     r = redis.from_url(config.redis.url, decode_responses=True)
     logger.info("Created Redis instance")
+
     storage = Storage(r, config.storage.prefix, config.storage.ttl)
-
+    await storage.migrate()
     logger.info("Created Storage instance")
-    publisher = Publisher(r, config.publisher.prefix)
 
+    publisher = Publisher(r, config.publisher.prefix)
     scraper = Scraper(config.scraper.url, storage=storage)
 
     task = PeriodicTask(
