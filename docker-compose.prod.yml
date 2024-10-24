@@ -8,6 +8,20 @@ services:
       - SCRAPER__INTERVAL=${SCRAPER__INTERVAL}
     networks:
       - internal
+    deploy:
+      replicas: 1
+      resources:
+        reservations:
+          memory: 64M
+        limits:
+          memory: 128M
+      update_config:
+        order: stop-first
+        monitor: 5s
+        failure_action: rollback
+      rollback_config:
+        order: stop-first
+        monitor: 5s
    
 networks:
   internal:
