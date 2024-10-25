@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 import logging
 from typing import TYPE_CHECKING
 
@@ -40,7 +41,16 @@ class PeriodicTask:
 
         try:
             records = await self.scraper.run()
+            logger.info("Got %d records", len(records))
+            records = [
+                record
+                for record in records
+                if not all(d < datetime.now() for d in record.dates)
+            ]
+            logger.info("After date filter %d records", len(records))
+
             changes = await self.storage.diff(records)
+            logger.info("Total changed %d records", len(changes))
             if not changes:
                 return
 

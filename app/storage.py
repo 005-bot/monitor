@@ -1,12 +1,13 @@
 import asyncio
 import hashlib
 import logging
-from datetime import datetime
 import re
+from datetime import datetime
 from typing import Awaitable, Literal, TypeVar
 
 from redis import Redis
 
+from app.parser import format_dates
 from app.scraper import Record
 
 logger = logging.getLogger(__name__)
@@ -90,7 +91,7 @@ class Storage:
                 (
                     record.area
                     + self.re_non_word.sub("", record.address)
-                    + record.dates
+                    + format_dates(record.dates)
                 ).encode()
             )
             .digest()
