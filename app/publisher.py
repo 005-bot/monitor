@@ -1,9 +1,13 @@
 import logging
 from typing import TYPE_CHECKING
+
 from apis.pubsub_models import Outage
+
+from app.parser import format_dates
 
 if TYPE_CHECKING:
     from redis import Redis
+
     from app.scraper import Record
 
 logger = logging.getLogger(__name__)
@@ -19,7 +23,7 @@ class Publisher:
             area=outage.area,
             organization=outage.organization,
             address=outage.address,
-            dates=outage.dates,
+            dates=format_dates(outage.dates),
         ).to_json()
 
         try:

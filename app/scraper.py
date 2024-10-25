@@ -2,10 +2,13 @@ import logging
 import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
+from datetime import datetime
 
 import httpx
 from bs4 import BeautifulSoup
 from bs4.element import Tag
+
+from app.parser import parse_dates
 
 if TYPE_CHECKING:
     from app.storage import Storage
@@ -17,9 +20,11 @@ class Record:
     area: str
     organization: str
     address: str
-    dates: str
+    dates: list[datetime]
 
-    def __init__(self, area: str, organization: str, address: str, dates: str):
+    def __init__(
+        self, area: str, organization: str, address: str, dates: list[datetime]
+    ):
         self.area = area
         self.organization = organization
         self.address = address
@@ -105,7 +110,9 @@ class Scraper:
         address = self.collapse_whitespaces(cells[1].text.strip())
         dates = self.collapse_whitespaces(cells[2].text.strip())
 
-        return Record(area, organization, address, dates)
+        parsed_dates = parse_dates(dates)
+
+        return Record(area, organization, address, parsed_dates)
 
     def collapse_whitespaces(self, string):
         return re.sub(r"\s+", " ", string)
