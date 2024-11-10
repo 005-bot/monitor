@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 from dataclasses import dataclass
@@ -7,6 +8,7 @@ from datetime import datetime
 import httpx
 from bs4 import BeautifulSoup
 from bs4.element import Tag
+from pydantic import BaseModel
 
 from app.parser import parse_dates
 
@@ -16,22 +18,37 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class Record:
+class Record(BaseModel):
     area: str
     organization: str
     address: str
     dates: list[datetime]
 
-    def __init__(
-        self, area: str, organization: str, address: str, dates: list[datetime]
-    ):
-        self.area = area
-        self.organization = organization
-        self.address = address
-        self.dates = dates
+    # def __init__(
+    #     self, area: str, organization: str, address: str, dates: list[datetime]
+    # ):
+    #     self.area = area
+    #     self.organization = organization
+    #     self.address = address
+    #     self.dates = dates
 
     def __repr__(self):
         return f"Record({self.area}, {self.organization}, {self.address}, {self.dates})"
+
+    # def to_dict(self):
+    #     return {
+    #         "area": self.area,
+    #         "organization": self.organization,
+    #         "address": self.address,
+    #         "dates": self.dates,
+    #     }
+
+    # def to_json(self):
+    #     return json.dumps(self.to_dict())
+
+    # @classmethod
+    # def from_json(cls, json_str):
+    #     return cls(**json.loads(json_str))
 
 
 @dataclass
@@ -112,7 +129,9 @@ class Scraper:
 
         parsed_dates = parse_dates(dates)
 
-        return Record(area, organization, address, parsed_dates)
+        return Record(
+            area=area, organization=organization, address=address, dates=parsed_dates
+        )
 
     def collapse_whitespaces(self, string):
         return re.sub(r"\s+", " ", string)

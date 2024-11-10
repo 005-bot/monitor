@@ -8,6 +8,7 @@ bs4 = "~=0.0"
 httpx = "~=0.27"
 redis = "~=5.1"
 apis = {git = "git+https://github.com/005-bot/apis"}
+pydantic = "*"
 
 [dev-packages]
 flake8 = "*"
