@@ -23,7 +23,8 @@ def parse_dates(dates: str) -> list[datetime]:
     with setlocale(LOCALE_RUSSIAN):
         return [
             datetime.strptime(
-                f"{day} {month} {current_year} {hour}:{minutes}", "%d %B %Y %H:%M"
+                f"{day} {month} {current_year} {hour.replace('24', '23')}:{minutes if hour != '24' else '59'}",
+                "%d %B %Y %H:%M",
             )
             for day, month, hour, minutes in found
         ]
