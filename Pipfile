@@ -3,17 +3,23 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
+[pipenv]
+sort_pipfiles = true
+
 [packages]
+apis = {git = "git+https://github.com/005-bot/apis"}
 bs4 = "~=0.0"
 httpx = "~=0.27"
-redis = "~=5.1"
-apis = {git = "git+https://github.com/005-bot/apis"}
 pydantic = "*"
+redis = "~=5.1"
+address-parser = {git = "git+https://github.com/005-bot/address-parser"}
 
 [dev-packages]
-flake8 = "*"
 black = "*"
+flake8 = "*"
 flake8-bugbear = "*"
+pytest = "*"
+pytest-asyncio = "*"
 
 [requires]
-python_version = "3.11"
+python_version = "3"

@@ -4,8 +4,10 @@ import signal
 import sys
 
 import redis
+from address_parser import AddressParser
 
 from app.config import config
+from app.parser.outage_details import OutageDetailsParser
 from app.publisher import Publisher
 from app.scheduler import PeriodicTask
 from app.scraper import Scraper
@@ -30,25 +32,27 @@ async def main():
     publisher = Publisher(r, config.publisher.prefix)
     scraper = Scraper(config.scraper.url, storage=storage)
 
-    task = PeriodicTask(
-        scraper=scraper,
-        storage=storage,
-        publisher=publisher,
-        interval=config.scraper.interval,
-    )
-    asyncio.create_task(task.start())
+    async with AddressParser() as address_parser:
+        task = PeriodicTask(
+            scraper=scraper,
+            storage=storage,
+            publisher=publisher,
+            outage_parser=OutageDetailsParser(address_parser),
+            interval=config.scraper.interval,
+        )
+        asyncio.create_task(task.start())
 
-    logger.info("Started periodic task")
+        logger.info("Started periodic task")
 
-    try:
-        # Keep the main coroutine running
-        while True:
-            await asyncio.sleep(1)
-    except asyncio.CancelledError:
-        logger.info("Shutting down...")
-    finally:
-        r.close()
-        logger.info("Redis connection closed")
+        try:
+            # Keep the main coroutine running
+            while True:
+                await asyncio.sleep(1)
+        except asyncio.CancelledError:
+            logger.info("Shutting down...")
+        finally:
+            r.close()
+            logger.info("Redis connection closed")
 
 
 async def shutdown(loop):

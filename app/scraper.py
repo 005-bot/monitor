@@ -1,13 +1,12 @@
-import json
 import logging
 import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import httpx
 from bs4 import BeautifulSoup
-from bs4.element import Tag
+from bs4.element import Tag, NavigableString
 from pydantic import BaseModel
 
 from app.parser import parse_dates
@@ -24,31 +23,8 @@ class Record(BaseModel):
     address: str
     dates: list[datetime]
 
-    # def __init__(
-    #     self, area: str, organization: str, address: str, dates: list[datetime]
-    # ):
-    #     self.area = area
-    #     self.organization = organization
-    #     self.address = address
-    #     self.dates = dates
-
     def __repr__(self):
         return f"Record({self.area}, {self.organization}, {self.address}, {self.dates})"
-
-    # def to_dict(self):
-    #     return {
-    #         "area": self.area,
-    #         "organization": self.organization,
-    #         "address": self.address,
-    #         "dates": self.dates,
-    #     }
-
-    # def to_json(self):
-    #     return json.dumps(self.to_dict())
-
-    # @classmethod
-    # def from_json(cls, json_str):
-    #     return cls(**json.loads(json_str))
 
 
 @dataclass
@@ -108,7 +84,7 @@ class Scraper:
         return records
 
     async def is_changed(self) -> bool:
-        response = httpx.head(self.url)
+        response = await self.session.head(self.url)
         response.raise_for_status()
         if "ETag" not in response.headers:
             logger.warning("ETag not found, scraping anyway.")
@@ -124,14 +100,30 @@ class Scraper:
             return None
 
         organization = self.collapse_whitespaces(cells[0].text.strip())
-        address = self.collapse_whitespaces(cells[1].text.strip())
+        address = self.get_text(cells[1])
         dates = self.collapse_whitespaces(cells[2].text.strip())
 
         parsed_dates = parse_dates(dates)
 
         return Record(
-            area=area, organization=organization, address=address, dates=parsed_dates
+            area=area,
+            organization=organization,
+            address="\n".join([s.strip() for s in address.splitlines()]),
+            dates=parsed_dates,
         )
 
-    def collapse_whitespaces(self, string):
+    @classmethod
+    def collapse_whitespaces(cls, string):
         return re.sub(r"\s+", " ", string)
+
+    @classmethod
+    def get_text(cls, tag: Tag) -> str:
+        def _get_text(tag: Tag):
+            for child in tag.children:
+                # print(child)
+                if isinstance(child, NavigableString):
+                    yield cls.collapse_whitespaces(child.get_text())
+                elif isinstance(child, Tag):
+                    yield from ["\n"] if child.name == "br" else _get_text(child)
+
+        return "".join(_get_text(tag))
