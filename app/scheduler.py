@@ -1,12 +1,13 @@
 import asyncio
-from datetime import datetime
 import logging
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.storage import Storage
-    from app.scraper import Scraper
+    from app.parser import OutageDetailsParser
     from app.publisher import Publisher
+    from app.scraper import Scraper, Record
+    from app.storage import Storage
 
 logger = logging.getLogger(__name__)
 
@@ -17,11 +18,13 @@ class PeriodicTask:
         scraper: "Scraper",
         storage: "Storage",
         publisher: "Publisher",
+        outage_parser: "OutageDetailsParser",
         interval: int,
     ):
         self.scraper = scraper
         self.storage = storage
         self.publisher = publisher
+        self.outage_parser = outage_parser
 
         self.interval = interval
 
@@ -43,7 +46,7 @@ class PeriodicTask:
             records = await self.scraper.run()
             logger.info("Got %d records", len(records))
             records = [
-                record
+                await self._fill_details(record)
                 for record in records
                 if not all(d < datetime.now() for d in record.dates)
             ]
@@ -62,9 +65,21 @@ class PeriodicTask:
                 try:
                     await self.publisher.publish(record)
                 except Exception as e:
-                    logger.error(f"Failed to publish outage: {e}", exc_info=True)
+                    logger.error("Failed to publish outage: %s", e, exc_info=True)
                     records.remove(record)
 
             await self.storage.commit(records)
         except Exception as e:
-            logger.error(f"Failed to commit records: {e}", exc_info=True)
+            logger.error("Failed to commit records: %s", e, exc_info=True)
+
+    async def _fill_details(self, record: "Record"):
+        try:
+            details = await self.outage_parser.parse(record.address)
+            if details is not None:
+                record.address = str(details)
+            # Optionally, add an else case if you want to modify behavior when parsing fails
+        except Exception as e:
+            logger.warning("Failed to parse address details: %s", e, exc_info=True)
+
+        # Continue with original address
+        return record

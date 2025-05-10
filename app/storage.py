@@ -83,6 +83,10 @@ class Storage:
             for k, v in (await result(self.r.hgetall(self.key_records))).items()
         }
 
+        logger.info(
+            "Diffing %d records with %d stored records", len(changed), len(stored)
+        )
+
         def is_new(stored: list[Record]):
             """
             Return a function that checks if a record is new or not.
@@ -105,12 +109,13 @@ class Storage:
                 s.set_seq2(record.address)
                 for stored_record in stored:
                     s.set_seq1(stored_record.address)
-                    if s.ratio() > 0.8 and stored_record.dates[-1] == record.dates[-1]:
+                    ratio = s.ratio()
+                    if ratio > 0.8 and stored_record.dates[-1] == record.dates[-1]:
                         logger.info(
                             "Skipping record %s as similar to %s with ratio %.2f",
                             record,
                             stored_record,
-                            s.ratio(),
+                            ratio,
                         )
                         return False
                 return True
