@@ -30,9 +30,10 @@ async def main():
     logger.info("Created Storage instance")
 
     publisher = Publisher(r, config.publisher.prefix)
-    scraper = Scraper(config.scraper.url, storage=storage)
 
-    async with AddressParser() as address_parser:
+    async with Scraper(
+        config.scraper.url, storage=storage
+    ) as scraper, AddressParser() as address_parser:
         task = PeriodicTask(
             scraper=scraper,
             storage=storage,

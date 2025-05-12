@@ -16,6 +16,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_WS_RE = re.compile(r"\s+")
+
 
 class Record(BaseModel):
     area: str
@@ -37,9 +39,20 @@ class Scraper:
         self.url = url
         self.storage = storage
 
-        self.session = httpx.AsyncClient()
+        self._session: httpx.AsyncClient | None = None
+
+    async def __aenter__(self):
+        self._session = await httpx.AsyncClient().__aenter__()
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        if self._session:
+            await self._session.__aexit__(exc_type, exc_value, traceback)
 
     async def run(self) -> list[Record]:
+        if not self._session:
+            raise RuntimeError("HTTP client is not initialized")
+
         logger.info("Running scraper...")
 
         if not await self.is_changed():
@@ -47,7 +60,7 @@ class Scraper:
             return []
 
         logger.info("ETag changed, scraping...")
-        response = await self.session.get(self.url)  # httpx.get(self.url)
+        response = await self._session.get(self.url)  # httpx.get(self.url)
         response.encoding = "windows-1251"
 
         response.raise_for_status()
@@ -84,7 +97,10 @@ class Scraper:
         return records
 
     async def is_changed(self) -> bool:
-        response = await self.session.head(self.url)
+        if not self._session:
+            raise RuntimeError("HTTP client is not initialized")
+
+        response = await self._session.head(self.url)
         response.raise_for_status()
         if "ETag" not in response.headers:
             logger.warning("ETag not found, scraping anyway.")
@@ -114,7 +130,7 @@ class Scraper:
 
     @classmethod
     def collapse_whitespaces(cls, string):
-        return re.sub(r"\s+", " ", string)
+        return _WS_RE.sub(" ", string)
 
     @classmethod
     def get_text(cls, tag: Tag) -> str:
