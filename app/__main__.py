@@ -7,6 +7,7 @@ import redis
 from address_parser import AddressParser
 
 from app.config import config
+from app.parser.organization import OrganizationParser
 from app.parser.outage_details import OutageDetailsParser
 from app.publisher import Publisher
 from app.scheduler import PeriodicTask
@@ -39,6 +40,7 @@ async def main():
             storage=storage,
             publisher=publisher,
             outage_parser=OutageDetailsParser(address_parser),
+            organization_parser=OrganizationParser(),
             interval=config.scraper.interval,
         )
         asyncio.create_task(task.start())
