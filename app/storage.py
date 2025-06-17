@@ -9,6 +9,7 @@ from typing import Awaitable, Literal, TypeVar
 from redis import Redis
 
 from app.parser import format_dates
+from app.publisher import ParsedRecord
 from app.scraper import Record
 
 logger = logging.getLogger(__name__)
@@ -44,7 +45,7 @@ class Storage:
 
         return (await result(self.r.set(self.key_etag, etag, get=True))) != etag
 
-    async def diff(self, records: list[Record]) -> list[Record]:
+    async def diff(self, records: list[ParsedRecord]) -> list[ParsedRecord]:
         """
         Compares a list of new records with stored records and returns a list of records
         that are considered new or changed.
@@ -87,7 +88,7 @@ class Storage:
             "Diffing %d records with %d stored records", len(changed), len(stored)
         )
 
-        def is_new(stored: list[Record]):
+        def is_new(stored: list[ParsedRecord]):
             """
             Return a function that checks if a record is new or not.
 
@@ -99,7 +100,7 @@ class Storage:
 
             s = SequenceMatcher()
 
-            def f(record: Record):
+            def f(record: ParsedRecord):
                 """
                 Return True if record.address is not similar to any of the addresses in the stored list.
                 Otherwise, return False.
@@ -128,7 +129,7 @@ class Storage:
 
         return changed
 
-    async def commit(self, records: list[Record]):
+    async def commit(self, records: list[ParsedRecord]):
         """
         Commits a list of records to the storage.
 
@@ -182,7 +183,7 @@ class Storage:
         await result(pipe.hdel(self.key_records, *to_remove))
         pipe.execute()
 
-    def hash(self, record: Record) -> str:
+    def hash(self, record: ParsedRecord) -> str:
         return (
             hashlib.md5(
                 (

@@ -115,7 +115,7 @@ class Scraper:
             )
             return None
 
-        organization = self.collapse_whitespaces(cells[0].text.strip())
+        organization = self.get_text(cells[0])
         address = self.get_text(cells[1])
         dates = self.collapse_whitespaces(cells[2].text.strip())
 
@@ -123,10 +123,14 @@ class Scraper:
 
         return Record(
             area=area,
-            organization=organization,
-            address="\n".join([s.strip() for s in address.splitlines()]),
+            organization=self._normalize_multiline(organization),
+            address=self._normalize_multiline(address),
             dates=parsed_dates,
         )
+
+    @classmethod
+    def _normalize_multiline(cls, string):
+        return "\n".join([s.strip() for s in string.splitlines()])
 
     @classmethod
     def collapse_whitespaces(cls, string):
