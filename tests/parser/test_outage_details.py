@@ -176,6 +176,11 @@ def test_water_delivery_parsing(parser, input_string, expected_deliveries):
                         "Бийхемская улица",
                         ["2-18"],
                     ),
+                    # Keep unknown streets
+                    Street(
+                        "1-19",
+                        None,
+                    ),
                     Street(
                         "Назаровская улица",
                         ["1-63", "2-84"],
