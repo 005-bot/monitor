@@ -6,15 +6,22 @@ from datetime import datetime
 from difflib import SequenceMatcher
 from typing import Awaitable, Literal, TypeVar
 
+from pydantic import BaseModel
 from redis import Redis
 
 from app.parser import format_dates
 from app.publisher import ParsedRecord
-from app.scraper import Record
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
+
+
+class _Record(BaseModel):
+    area: str
+    organization: str
+    address: str
+    dates: list[datetime]
 
 
 async def result(value: T | Awaitable[T]) -> T:
@@ -79,8 +86,8 @@ class Storage:
         if len(changed) == 0:
             return changed
 
-        stored: dict[str, Record] = {
-            k: Record.model_validate_json(v)
+        stored: dict[str, _Record] = {
+            k: _Record.model_validate_json(v)
             for k, v in (await result(self.r.hgetall(self.key_records))).items()
         }
 
@@ -88,7 +95,7 @@ class Storage:
             "Diffing %d records with %d stored records", len(changed), len(stored)
         )
 
-        def is_new(stored: list[ParsedRecord]):
+        def is_new(stored: list[_Record]):
             """
             Return a function that checks if a record is new or not.
 
@@ -162,7 +169,20 @@ class Storage:
         await result(
             pipe.hmset(
                 self.key_records,
-                dict(zip(hashes, [record.model_dump_json() for record in records])),
+                dict(
+                    zip(
+                        hashes,
+                        [
+                            _Record(
+                                area=record.area,
+                                organization=str(record.organization),
+                                address=record.address,
+                                dates=record.dates,
+                            ).model_dump_json()
+                            for record in records
+                        ],
+                    )
+                ),
             )
         )
         pipe.execute()

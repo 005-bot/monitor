@@ -1,64 +1,13 @@
 import logging
 import re
 import typing
-from dataclasses import dataclass
+
+from apis.models import OutageDetails, Reason, Street, WaterDelivery
 
 if typing.TYPE_CHECKING:
     from address_parser import AddressParser
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class Street:
-    name: str
-    buildings: list[str] | None
-
-    def __str__(self) -> str:
-        s = self.name
-        if self.buildings:
-            s += " " + ", ".join(self.buildings)
-
-        return s
-
-
-@dataclass(frozen=True)
-class Reason:
-    type: str
-    description: str
-
-    def __str__(self) -> str:
-        return f"{self.type} - {self.description}"
-
-
-@dataclass(frozen=True)
-class WaterDelivery:
-    street: str
-    buildings: str
-    time_start: str
-    time_end: str
-
-    def __str__(self) -> str:
-        return f"{self.street} {self.buildings} с {self.time_start} до {self.time_end}"
-
-
-@dataclass(frozen=True)
-class OutageDetails:
-    streets: list[Street]
-    reason: Reason | None = None
-    water_deliveries: list[WaterDelivery] | None = None
-    comments: str | None = None
-
-    def __str__(self) -> str:
-        base = "\n".join([str(s) for s in self.streets])
-        if self.reason:
-            base += f"\n\n{self.reason}"
-        if self.water_deliveries:
-            base += "\n\nПодвоз воды: "
-            base += "; ".join([str(wd) for wd in self.water_deliveries])
-        elif self.comments:
-            base += f"\n\n{self.comments}"
-        return base
 
 
 class OutageDetailsParser:

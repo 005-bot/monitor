@@ -4,11 +4,8 @@ from functools import cached_property
 from typing import TYPE_CHECKING
 
 from apis.pubsub_models import Outage
+from apis.models import OrganizationInfo, OutageDetails
 from pydantic import BaseModel
-
-from app.parser import format_dates
-from app.parser.organization import OrganizationInfo
-from app.parser.outage_details import OutageDetails
 
 if TYPE_CHECKING:
     from redis import Redis
@@ -37,10 +34,10 @@ class Publisher:
     async def publish(self, outage: ParsedRecord):
         msg = Outage(
             area=outage.area,
-            organization=str(outage.organization),
-            address=str(outage.details),
-            dates=format_dates(outage.dates),
-        ).to_json()
+            organization_info=outage.organization,
+            details=outage.details,
+            period=outage.dates,
+        ).model_dump_json()
 
         try:
             self.redis.publish(self.channel, msg)
