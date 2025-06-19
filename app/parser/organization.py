@@ -1,33 +1,11 @@
 import logging
 import re
-from dataclasses import dataclass
+
+from apis.models import OrganizationInfo, ResourceType
 
 _PHONE_PREFIX_RE = re.compile(r"^\s*(?:т\.?\s*|тел\.?\s*|т:\s*)", re.IGNORECASE)
 
 logger = logging.getLogger(__name__)
-
-
-class ResourceType(str, enum.Enum):
-    COLD_WATER = "Холодное водоснабжение"
-    HOT_WATER = "Горячее водоснабжение"
-    ELECTRICITY = "Электроснабжение"
-    GAS = "Газоснабжение"
-
-
-@dataclass(frozen=True)
-class OrganizationInfo:
-    """Data class containing organization information parsed from input strings"""
-
-    resource_type: ResourceType | None
-    resource: str
-    organization: str
-    phones: list[str]
-
-    def __str__(self) -> str:
-        parts = [self.resource, self.organization]
-        if self.phones:
-            parts.append(", ".join(self.phones))
-        return "\n".join(parts)
 
 
 class OrganizationParser:
