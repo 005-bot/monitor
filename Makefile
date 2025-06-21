@@ -1,7 +1,7 @@
 # Makefile for the web scraping project using Pipenv
 
 # Variables
-DOCKER_COMPOSE = docker-compose
+DOCKER_COMPOSE = docker compose
 PIPENV = pipenv
 
 # Docker commands
@@ -9,7 +9,7 @@ build:
 	$(DOCKER_COMPOSE) build
 
 up:
-	$(DOCKER_COMPOSE) up -d
+	$(DOCKER_COMPOSE) up --build
 
 down:
 	$(DOCKER_COMPOSE) down
