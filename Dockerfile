@@ -29,12 +29,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tzdata \
     locales \
     && rm -rf /var/lib/apt/lists/* \
-    && localedef -i ru_RU -c -f UTF-8 -A /usr/share/locale/locale.alias ru_RU.UTF-8
+    && echo "ru_RU.UTF-8 UTF-8" >> /etc/locale.gen \
+    && echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen \
+    && locale-gen ru_RU \
+    && locale-gen ru_RU.UTF-8 \
+    && locale-gen en_US.UTF-8 \
+    && update-locale
 
 ENV TZ=Asia/Krasnoyarsk
-# ENV LANG=ru_RU.UTF-8
-# ENV LANGUAGE=ru_RU:ru
-# ENV LC_ALL=ru_RU.UTF-8
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
