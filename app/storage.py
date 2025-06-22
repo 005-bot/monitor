@@ -40,6 +40,7 @@ class Storage:
         self.key_hashes = f"{prefix}:items"
         self.key_ttls = f"{prefix}:ttls"
         self.key_records = f"{prefix}:records"
+        self.key_records_v2 = f"{prefix}:records_v2"
 
         self.re_non_word = re.compile(r"\W")
 
@@ -67,6 +68,18 @@ class Storage:
 
         Returns:
             list[Record]: A list of records that are new or changed compared to stored records.
+        """
+        if not records:
+            return []
+
+        changed = await self._diff_v2(records)
+
+        # TODO: remove after 2025-09-01
+        return await self._diff_v1(changed)
+
+    async def _diff_v1(self, records: list[ParsedRecord]) -> list[ParsedRecord]:
+        """
+        Remove after 2025-09-01
         """
         if not records:
             return []
@@ -136,6 +149,15 @@ class Storage:
 
         return changed
 
+    async def _diff_v2(self, records: list[ParsedRecord]) -> list[ParsedRecord]:
+        if not records:
+            return []
+
+        hashes = {self.hash_v2(record): record for record in records}
+        existed: set[str] = set(await result(self.r.hkeys(self.key_records_v2)))
+
+        return [hashes[h] for h in hashes if h not in existed]
+
     async def commit(self, records: list[ParsedRecord]):
         """
         Commits a list of records to the storage.
@@ -152,6 +174,32 @@ class Storage:
         Args:
             records (list[Record]): A list of records to be stored in the storage.
         """
+        if not records:
+            return
+
+        records_v2 = {
+            self.hash_v2(record): record.model_dump_json() for record in records
+        }
+
+        pipe = self.r.pipeline()
+        await result(pipe.hmset(self.key_records_v2, records_v2))
+        await result(
+            pipe.hexpire(
+                self.key_records_v2,
+                self.ttl,
+                *list(records_v2.keys()),
+            )
+        )
+        pipe.execute()
+
+        # TODO: remove after 2025-09-01
+        await self._commit_v1(records)
+
+    async def _commit_v1(self, records: list[ParsedRecord]):
+        """
+        Remove after 2025-09-01
+        """
+
         if not records:
             return
 
@@ -204,12 +252,39 @@ class Storage:
         pipe.execute()
 
     def hash(self, record: ParsedRecord) -> str:
+        """
+        Remove after 2025-09-01
+        """
         return (
             hashlib.md5(
                 (
                     record.area
                     + self.re_non_word.sub("", record.address)
                     + format_dates(record.dates)
+                ).encode()
+            )
+            .digest()
+            .hex()
+        )
+
+    def hash_v2(self, record: ParsedRecord) -> str:
+        """
+        Generate a hash string for a ParsedRecord using its area, street names,
+        reason description, and the first date.
+
+        Args:
+            record (ParsedRecord): The record to generate a hash for.
+
+        Returns:
+            str: The hexadecimal representation of the MD5 hash.
+        """
+
+        return (
+            hashlib.md5(
+                (
+                    ",".join([s.name for s in record.details.streets])
+                    + (record.details.reason.type if record.details.reason else "")
+                    + format_dates(record.dates[:1])
                 ).encode()
             )
             .digest()
