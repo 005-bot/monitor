@@ -1,61 +1,104 @@
-# 005 Бот - Монитор 
+<a id="readme-top"></a>
 
-[![Apache License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+<!-- PROJECT SHIELDS -->
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![Apache License][license-shield]][license-url]
 
-Сервис выполняет периодическое сканирование страницы с актуальными отключениями, выявляет изменения и отправляет их в Redis PubSub.
+<!-- PROJECT LOGO -->
+<br />
+<div align="center">
+  <a href="https://github.com/005-bot/monitor/tree/master">
+    <img src="assets/logo.png" alt="Logo" width="80" height="80">
+  </a>
 
-Проект находится на стадии MVP и может содержать обратно несовместимые изменения.
+  <h3 align="center">005 Бот - Монитор</h3>
 
-## Содержание
-- [005 Бот - Монитор](#005-бот---монитор)
-  - [Содержание](#содержание)
-  - [Установка](#установка)
-    - [Требования](#требования)
-    - [Локальная установка](#локальная-установка)
-    - [Docker установка](#docker-установка)
+  <p align="center">
+    Сервис мониторинга отключений
+    <br />
+    <br />
+    <a href="https://github.com/005-bot/monitor/issues/new?labels=bug">Сообщить о проблеме</a>
+    &middot;
+    <a href="https://github.com/005-bot/monitor/issues/new?labels=enhancement">Предложить функцию</a>
+  </p>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+
+- [О проекте](#о-проекте)
   - [Используемые технологии](#используемые-технологии)
-  - [Настройки](#настройки)
-  - [Логика работы](#логика-работы)
-  - [Разработка](#разработка)
-    - [Структура проекта](#структура-проекта)
-    - [Сборка](#сборка)
-    - [Запуск в development режиме](#запуск-в-development-режиме)
-  - [Тестирование](#тестирование)
-    - [Запуск тестов](#запуск-тестов)
-  - [Лицензия](#лицензия)
+- [Начало работы](#начало-работы)
+  - [Предварительные требования](#предварительные-требования)
+  - [Установка](#установка)
+- [Настройки](#настройки)
+- [Использование](#использование)
+- [Лицензия](#лицензия)
+- [Контакты](#контакты)
 
 
-## Установка
+<!-- ABOUT THE PROJECT -->
+## О проекте
 
-### Требования
+Сервис мониторинга — это решение на базе Python, которое выполняет периодический веб-скрейпинг страниц с информацией об отключениях, обнаруживает изменения и публикует уведомления через Redis PubSub.
 
-- Python 3.11+
-- Redis 7.0+
-- Docker (опционально)
+Основные функции:
 
-### Локальная установка
+- Автоматический веб-скрейпинг страниц с информацией об отключениях
+- Обнаружение изменений с использованием хэш-сравнения
+- Интеграция с Redis PubSub для уведомлений в реальном времени
+- Настраиваемые интервалы мониторинга и параметры хранения
+- Контейнеризация с помощью Docker для простого развертывания
 
-```bash
-pipenv install
-pipenv run python -m app
-```
+<p align="right">(<a href="#readme-top">в начало</a>)</p>
 
-### Docker установка
+### Используемые технологии
 
-```bash
-docker compose up --build
-```
+Этот проект построен с использованием современных инструментов Python и технологий контейнеризации:
 
-## Используемые технологии
+- [![Python][Python]][Python-url]
+- [![Docker][Docker]][Docker-url]
+- [![Pipenv][Pipenv]][Pipenv-url]
+- [![Redis][Redis]][Redis-url]
+- [![BeautifulSoup][BeautifulSoup]][BeautifulSoup-url]
+- [![httpx][httpx]][httpx-url]
+- [![Pydantic][Pydantic]][Pydantic-url]
 
-- [Python](https://www.python.org/) - Основной язык программирования
-- [Docker](https://www.docker.com/) - Контейнеризация
-- [Pipenv](https://github.com/pypa/pipenv) - Управление зависимостями
-- [Redis](https://redis.io/) - Хранилище данных и PubSub
-- [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/) - Парсинг HTML
-- [httpx](https://github.com/encode/httpx/) - HTTP клиент
-- [Pydantic](https://pydantic-docs.helpmanual.io/) - Валидация данных
-- [Pytest](https://docs.pytest.org/) - Тестирование
+<p align="right">(<a href="#readme-top">в начало</a>)</p>
+
+<!-- GETTING STARTED -->
+## Начало работы
+
+Чтобы запустить локальную копию, следуйте этим простым шагам.
+
+### Предварительные требования
+
+- Docker и Docker Compose
+- Python 3.11+ (для локальной разработки)
+- Redis 7.0+ (или используйте Docker Compose)
+
+### Установка
+
+1. Клонируйте репозиторий
+   ```sh
+   git clone https://github.com/005-bot/monitor.git
+   cd monitor
+   ```
+
+2. Запустите с помощью Docker Compose
+   ```sh
+   docker compose up --build
+   ```
+
+3. Для локальной разработки
+   ```sh
+   pipenv install
+   pipenv run python -m app
+   ```
+
+<p align="right">(<a href="#readme-top">в начало</a>)</p>
 
 ## Настройки
 
@@ -70,65 +113,60 @@ docker compose up --build
 | `STORAGE__PREFIX`   | Префикс хранилища для ключей в Redis  | `bot-005`                           |
 | `PUBLISHER__PREFIX` | Префикс очереди PubSub в Redis        | `bot-005`                           |
 
-## Логика работы
+<p align="right">(<a href="#readme-top">в начало</a>)</p>
 
-1. Сервис с периодичностью в `SCRAPER__INTERVAL` секунд запрашивает страницу по адресу `SCRAPER__URL`
-2. Полученная страница разбирается на отдельные записи
-3. Для каждой записи считается хэш и сравнивается с сохраненными в хранилище значениями
-4. Записи, отсутствующие в хранилище считаются новыми и отправляются в очередь сообщений
-5. Новые значения хэшей записываются в хранилище
+<!-- USAGE EXAMPLES -->
+## Использование
 
-```mermaid
-sequenceDiagram
-    participant Scheduler
-    participant Scraper
-    participant Parser
-    participant Storage
-    participant Publisher
-    
-    Scheduler->>Scraper: Запуск сканирования
-    Scraper->>Parser: HTML контент
-    Parser->>Storage: Проверка хэшей
-    Storage-->>Parser: Новые записи
-    Parser->>Publisher: Публикация новых записей
-    Publisher->>Redis: Отправка в PubSub
-```
+Сервис мониторинга работает непрерывно, сканируя и отслеживая информацию об отключениях:
 
-## Разработка
+1. **Конфигурация**: Установите переменные окружения в файле docker-compose.yml или .env
+2. **Мониторинг**: Сервис сканирует настроенный URL с регулярными интервалами
+3. **Обнаружение изменений**: Новые отключения обнаруживаются с помощью сравнения хэшей
+4. **Уведомления**: Изменения публикуются в Redis PubSub для последующей обработки
 
-### Структура проекта
+> Примечание: Перед скрейпингом убедитесь, что вы соблюдаете robots.txt и условия использования сайта, а также настраивайте разумные интервалы запросов.
 
-```text
-app/
-├── config/       # Конфигурация
-├── parser/       # Парсинг HTML
-├── publisher.py  # Публикация в Redis
-├── scheduler.py  # Планировщик задач
-├── scraper.py    # Веб-скрейпинг
-└── storage.py    # Работа с Redis
-tests/            # Тесты
-```
+<p align="right">(<a href="#readme-top">в начало</a>)</p>
 
-### Сборка
-
-```bash
-make build  # Сборка Docker-образа
-```
-
-### Запуск в development режиме
-
-```bash
-make dev  # Запуск с hot-reload
-```
-
-## Тестирование
-
-### Запуск тестов
-
-```bash
-make test  # Запуск всех тестов
-```
-
+<!-- LICENSE -->
 ## Лицензия
 
-Проект распространяется под лицензией [Apache 2.0](LICENSE).
+Распространяется по лицензии Apache 2.0. Подробнее см. в файле `LICENSE`.
+
+<p align="right">(<a href="#readme-top">в начало</a>)</p>
+
+<!-- CONTACT -->
+## Контакты
+
+Электронная почта: [help@005бот.рф](mailto:help@005бот.рф)  
+Сайт: [005бот.рф](https://005бот.рф)
+
+<p align="right">(<a href="#readme-top">в начало</a>)</p>
+
+<!-- MARKDOWN LINKS & IMAGES -->
+<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[contributors-shield]: https://img.shields.io/github/contributors/005-bot/monitor.svg?style=for-the-badge
+[contributors-url]: https://github.com/005-bot/monitor/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/005-bot/monitor.svg?style=for-the-badge
+[forks-url]: https://github.com/005-bot/monitor/network/members
+[stars-shield]: https://img.shields.io/github/stars/005-bot/monitor.svg?style=for-the-badge
+[stars-url]: https://github.com/005-bot/monitor/stargazers
+[issues-shield]: https://img.shields.io/github/issues/005-bot/monitor.svg?style=for-the-badge
+[issues-url]: https://github.com/005-bot/monitor/issues
+[license-shield]: https://img.shields.io/github/license/005-bot/monitor.svg?style=for-the-badge
+[license-url]: LICENSE
+[Python]: https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54
+[Python-url]: https://www.python.org/
+[Docker]: https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white
+[Docker-url]: https://www.docker.com/
+[Pipenv]: https://img.shields.io/badge/pipenv-%23000000.svg?style=for-the-badge&logo=pipenv&logoColor=white
+[Pipenv-url]: https://github.com/pypa/pipenv
+[Redis]: https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white
+[Redis-url]: https://redis.io/
+[BeautifulSoup]: https://img.shields.io/badge/beautifulsoup-%23000000.svg?style=for-the-badge&logo=python&logoColor=white
+[BeautifulSoup-url]: https://www.crummy.com/software/BeautifulSoup/
+[httpx]: https://img.shields.io/badge/httpx-%23000000.svg?style=for-the-badge&logo=python&logoColor=white
+[httpx-url]: https://github.com/encode/httpx/
+[Pydantic]: https://img.shields.io/badge/pydantic-%23000000.svg?style=for-the-badge&logo=python&logoColor=white
+[Pydantic-url]: https://docs.pydantic.dev/latest/
